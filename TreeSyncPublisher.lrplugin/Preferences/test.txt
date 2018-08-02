@@ -1,0 +1,168 @@
+--[[
+        Plugin configuration file (aka 'Advanced Settings').
+        
+        Note: Named members of return table are accessible in source code as:
+        
+            app:getPref( name )
+            
+            provided there is no app:initPref( name, val ) or app:setPref( name, val ) statements executed prior,
+            which hide/override the named members in this file.
+            
+        Potentially helpful documentation:
+        
+        * Lightroom SDK (http://www.adobe.com/devnet/photoshoplightroom.html)
+          * API spec (html)
+          * Programmer's guide (pdf).
+          
+        Lua doc may also be useful (www.lua.org)
+        * Lua reference manual
+        * Lua programmer's guide
+        
+        More info on the net/web: See Plugin Manager in Lightroom for current link.
+        
+        Note: lines prefixed with '--' don't do anything (they're comments).
+        Also, lines enclosed by - - [ [  and - - ] ] (without the spaces) are also comments, and don't do anything
+        
+--]]
+
+
+-- declare configuration return table
+local _t = {}
+
+
+
+_t.javaApp = nil -- set a path to java (runtime) interpreter (executable file) if using java-based FTP and preferred version of java is not pathed.
+
+
+
+--[[
+        Card publishing enable/disable.
+        
+        Set to true to enable card-publishing options.
+        Set to false to disable card-publishing options.
+--]]
+_t.cardPubEna = false
+
+
+
+
+-- metadata that triggers republish:
+-- See Lightroom SDK/API doc for details - download from 'http://www.adobe.com/devnet/photoshoplightroom.html'.
+-- Publish serice provider section, metadataThatTriggersRepublish function, or see below...
+local _trigger = {}
+_trigger.default = false
+_trigger.title = true
+_trigger.caption = true
+_trigger.keywords = true
+_trigger.gps = true
+_trigger.dateCreated = true
+--[[ Excerpt from above-mentioned document:
+    default: All built-in metadata that appears in XMP for the file. You can override this default behavior by explicitly naming any of these specific fields:
+        rating
+        label
+        title
+        caption
+        gps
+        gpsAltitude
+        creator
+        creatorJobTitle
+        creatorAddress
+        creatorCity
+        creatorStateProvince
+        creatorPostalCode
+        creatorCountry
+        creatorPhone
+        creatorEmail
+        creatorUrl
+        headline
+        iptcSubjectCode
+        descriptionWriter
+        iptcCategory
+        iptcOtherCategories
+        dateCreated
+        intellectualGenre
+        scene
+        location
+        city
+        stateProvince
+        country
+        isoCountryCode
+        jobIdentifier
+        instructions
+        provider
+        source
+        copyright
+        rightsUsageTerms
+        copyrightInfoUrl
+        copyrightStatus
+        keywords
+    customMetadata: All plug-in defined custom metadata (defined by any plug-in).
+    (plug-in ID).*: All custom metadata defined by the plug-in with the specified ID.
+    (plug-in ID).(field ID): One specific custom metadata field defined by the plug-in with the specified ID.
+--]]
+
+-- assign config subtables to return table
+_t.triggers = _trigger
+
+
+_t.localViewerParams = "" -- specify special parameters to pass to local viewer, if desired.
+
+
+
+--[[
+        Function for creating remote URL.
+        
+        * Called to compute remote URL for viewing remotely published photos in browser, in case photo is not found on local disk.
+        * Executes in TreeSync Publisher / Elare Plugin Framework environment.
+        
+        Examples:
+        
+        _t.getRemoteUrl = nil -- I don't plan on ever publishing photos remotely - just display on local host...
+
+        _t.getRemoteUrl = function( t ) -- get web URL...
+            local photo = t.photo
+            assert( photo ~= nil, "no photo" )
+            local photoId = t.photoId
+            assert( photoId ~= nil, "no photo id" )
+            local settings = t.settings -- or t.exportParams or t.publishSettings
+            assert( settings ~= nil, "no settings" )
+            assert( settings.destPath ~= nil, "no dest-path" )
+            local destPath, excuse = Common.getDestPathFromPublishedId( photoId, settings )
+            if str:is( destPath ) then
+                local remotePath = str:replaceBackSlashesWithForwardSlashes( Common.getSubPath( settings.destPath, destPath, settings.destPathSuffix, photo, settings ) )  -- includes leading slash.
+                local remoteUrl = str:fmt( "http://www.robcole.com/_temp^1", remotePath )
+                return remoteUrl
+            else
+                return nil, excuse
+            end
+        end
+        
+--]]
+_t.getRemoteUrl = function( t )
+    local photo = t.photo
+    assert( photo ~= nil, "no photo" )
+    local photoId = t.photoId
+    assert( photoId ~= nil, "no photo id" )
+    local settings = t.settings --  or t.exportParams or t.publishSettings
+    assert( settings ~= nil, "no settings" )
+    assert( settings.destPath ~= nil, "no dest-path" )
+    local destPath, excuse = Common.getDestPathFromPublishedId( photoId, settings )
+    if str:is( destPath ) then
+        -- local remotePath = str:replaceBackSlashesWithForwardSlashes( Common.getSubPath( settings.destPath, destPath, photo, settings ) ) -- includes leading slash
+        -- local remoteUrl = str:fmt( "http://www.jdoe.com/test^1", remotePath )
+        -- local remoteUrl = str:fmt( "file://^1", destPath ) -- back-slashes should be OK in Windows.
+        -- return remoteUrl
+        return nil, "getRemoteUrl not implemented in advanced settings" -- comment this out, and edit/uncomment stuff above, if you want to be able to show remotely published photos.
+    else
+        return nil, excuse or "no excuse"
+    end
+end
+
+
+
+_t.lrApp = nil -- specify Lr startup batch file or executable, if not using standard Lightroom startinup - only used for plugin-assisted restarting convenience when new filenaming template to be used warrants a restart.
+_t.exifToolApp = nil -- set to path of preferred version of exiftool (executable file) if you want.
+
+
+-- return config table
+return _t
